@@ -1,0 +1,122 @@
+{
+    "swagger":"2.0",
+    "info":{
+        "title":"Requirement Elicitation System API",
+        "version":"4.11.1"
+    },
+    "paths":
+    {
+        "/":
+        {
+            "get":
+            {
+                "description":"Returns a message to show the application is up",
+                "produces":["application/json"],
+                "responses":{"200":{"description":"Welcome"}}
+            }
+        },
+        "/api/users/signup": {
+            "post": {
+            "summary": "Sign up",
+            "consumes": ["application/json"],
+            "produces": ["application/json"],
+            "parameters": [
+                {
+                "in": "body",
+                "name": "user",
+                "description": "JSON data for the API",
+                "required": true,
+                "schema": {
+                    "$ref": "#/definitions/SignUp"
+                }
+                }
+            ],
+            "responses": {
+                "201": {
+                    "description": "User successfully registered"
+                },
+                "400": {
+                    "description": "Invalid input"
+                }
+            }
+            }
+        },
+        "/api/users/signin": {
+            "post": {
+            "summary": "Sign in",
+            "consumes": ["application/json"],
+            "produces": ["application/json"],
+            "parameters": [
+                {
+                "in": "body",
+                "name": "user",
+                "description": "JSON data for the API",
+                "required": true,
+                "schema": {
+                    "$ref": "#/definitions/Signin"
+                }
+                }
+            ],
+            "responses": {
+                "200": {
+                "description": "User successfully signed in",
+                "examples": {
+                    "application/json": {
+                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                    }
+                  },
+                "400": {
+                    "description": "Invalid input"
+                },
+                "401": {
+                    "description": "Unauthorized - Incorrect credentials"
+                }
+            }
+            }
+        },
+        "definitions": {
+            "Signup": {
+              "type": "object",
+              "required": ["full_name", "email_address", "password"],
+              "properties": {
+                "full_name": {
+                  "type": "string"
+                },
+                "email_address": {
+                  "type": "string"
+                },
+                "password": {
+                  "type": "string"
+                }
+              }
+            },
+            "Signin": {
+              "type": "object",
+              "required": ["email_address", "password"],
+              "properties": {
+                "email_address": {
+                  "type": "string"
+                },
+                "password": {
+                  "type": "string"
+                }
+              }
+            },
+            "ErrorMessage": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+        }          
+    }
+}

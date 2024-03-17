@@ -1,0 +1,10 @@
+__pycache__/
+
+#virtual environment
+Elicitation/
+
+#instance folder
+instance/
+
+#log file
+app.log
