@@ -3,23 +3,30 @@ from db_provider import get_db
 from models import users, user_input, generated_requirements
 import sqlite3
 
+
 def get_user_by_email(email_address):
     db = get_db()
     try:
-        cursor = db.execute("SELECT * FROM users WHERE email_address = ?",(email_address,))
+        cursor = db.execute(
+            "SELECT * FROM users WHERE email_address = ?", (email_address,)
+        )
         user = cursor.fetchone()
         return user
     except Exception as e:
         logger.error(f"Error: {e}")
 
+
 def check_user_exists(email_address):
     db = get_db()
     try:
-        cursor = db.execute("SELECT * FROM users WHERE email_address =?",(email_address,))
+        cursor = db.execute(
+            "SELECT * FROM users WHERE email_address =?", (email_address,)
+        )
         user = cursor.fetchone()
         return user
     except Exception as e:
         logger.error(f"Error: {e}")
+
 
 def get_users():
     db = get_db()
@@ -27,7 +34,7 @@ def get_users():
     try:
         cursor = db.execute("SELECT user_id, full_name, email_address FROM users")
         user_rows = cursor.fetchall()
-        columns = ['user_id','full_name', 'email_address']
+        columns = ["user_id", "full_name", "email_address"]
         users = [dict(zip(columns, row)) for row in user_rows]
     except Exception as e:
         logger.error(f"Error: {e}")
@@ -35,14 +42,19 @@ def get_users():
         db.close()  # Ensure the database connection is closed
     return users
 
+
 def create_user(user_id, full_name, email_address, password):
     db = get_db()
     try:
-        cursor = db.execute("INSERT INTO users (user_id, full_name, email_address, password) VALUES (?,?,?,?)", (user_id, full_name, email_address, password))
+        cursor = db.execute(
+            "INSERT INTO users (user_id, full_name, email_address, password) VALUES (?,?,?,?)",
+            (user_id, full_name, email_address, password),
+        )
         db.commit()
         return True
     except Exception as e:
         logger.error(f"Error: {e}")
+
 
 def get_user_by_id(user_id):
     db = get_db()
@@ -51,19 +63,29 @@ def get_user_by_id(user_id):
         user_data = cursor.fetchone()
         if user_data is None:
             return None
-        user = users(user_data['user_id'], user_data['full_name'], user_data['email_address'], user_data['password'])
+        user = users(
+            user_data["user_id"],
+            user_data["full_name"],
+            user_data["email_address"],
+            user_data["password"],
+        )
         return user
     except Exception as e:
         logger.error(f"Error: {e}")
 
+
 def get_user_profile(user_id):
     db = get_db()
     try:
-        cursor = db.execute("SELECT full_name, email_address, password FROM users WHERE user_id = ?", (user_id,))
+        cursor = db.execute(
+            "SELECT full_name, email_address, password FROM users WHERE user_id = ?",
+            (user_id,),
+        )
         user_details = cursor.fetchone()
         return user_details
     except Exception as e:
         logger.error(f"Error: {e}")
+
 
 def update_profile(user_id, full_name=None, email_address=None, new_password=None):
     db = get_db()
@@ -83,7 +105,7 @@ def update_profile(user_id, full_name=None, email_address=None, new_password=Non
 
         # Remove trailing comma and space if any updates are present
         if params:
-            sql = sql[:-2] 
+            sql = sql[:-2]
 
         sql += " WHERE user_id = ?"
         params.append(user_id)
@@ -94,10 +116,86 @@ def update_profile(user_id, full_name=None, email_address=None, new_password=Non
     except Exception as e:
         logger.error(f"Error: {e}")
 
-def add_user_input(input_id,user_id, input, created_at):
+
+def add_user_input(input_id, user_id, input, created_at):
     db = get_db()
     try:
-        db.execute("INSERT INTO user_input(input_id, user_id, input, created_at) VALUES (?,?,?,?)", (input_id, user_id, input, created_at))
+        db.execute(
+            "INSERT INTO user_input(input_id, user_id, input, created_at) VALUES (?,?,?,?)",
+            (input_id, user_id, input, created_at),
+        )
+        db.commit()
+        return True
+    except Exception as e:
+        logger.error(f"Error: {e}")
+
+
+# ########### FETCH ALL USER INPUTS ###################
+
+
+def get_user_inputs(user_id):
+    print("start")
+    db = get_db()
+    print(user_id)
+    try:
+        cursor = db.execute("SELECT * FROM user_input WHERE user_id =?", (user_id,))
+        user_inputs_rows = cursor.fetchall()
+        print(user_inputs_rows)
+        columns = ["input_id", "user_id", "input", "created_at"]
+        user_inputs = [dict(zip(columns, row)) for row in user_inputs_rows]
+        print(user_inputs)
+        return user_inputs
+    except Exception as e:
+        print(f"db_error : {e}")
+        logger.error(f"Error: {e}")
+
+
+# ########### FETCH SPECIFIC USER INPUT ###################
+
+
+def get_user_input_by_id(user_id, input_id):
+    print("start")
+    db = get_db()
+    try:
+        cursor = db.execute(
+            "SELECT * FROM user_input WHERE user_id = ? AND input_id = ?",
+            (user_id, input_id),
+        )
+        input_data_row = cursor.fetchone()
+        columns = ["input_id", "user_id", "input", "created_at"]
+        input_data = dict(zip(columns, input_data_row))
+        print(input_data)
+        return input_data
+    except Exception as e:
+        logger.error(f"Error: {e}")
+
+
+# ########### UPDATE USER INPUT ###################
+
+
+def update_user_input(user_id, input_id, input_text):
+    db = get_db()
+    try:
+        db.execute(
+            "UPDATE user_input SET input = ? WHERE input_id = ? AND user_id = ?",
+            (input_text, input_id, user_id),
+        )
+        db.commit()
+        return True
+    except Exception as e:
+        logger.error(f"Error: {e}")
+
+
+# ########### DELETE USER INPUT ###################
+
+
+def delete_user_input(user_id, input_id):
+    db = get_db()
+    try:
+        db.execute(
+            "DELETE FROM user_input WHERE input_id = ? AND  user_id = ?",
+            (input_id, user_id),
+        )
         db.commit()
         return True
     except Exception as e:
