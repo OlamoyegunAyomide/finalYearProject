@@ -200,3 +200,48 @@ def delete_user_input(user_id, input_id):
         return True
     except Exception as e:
         logger.error(f"Error: {e}")
+
+
+###### GENERATE REQUIREMENTS FOR A NEW INPUT ######\
+
+def generate_input_requirements(input_id, data):
+    GOOGLE_API_KEY = config('GOOGLE_API_KEY')
+    genai.configure(api_key=GOOGLE_API_KEY)
+
+    model = genai.GenerativeModel('gemini-pro')
+    chat = model.start_chat(history=[])
+
+    response = chat.send_message(
+        "Generate requirements for " + data)
+    
+    requirements = response.text
+
+    created_at = datetime.datetime.utcnow()
+    add_input_requirements(input_id, requirements, created_at)
+    
+    return requirements
+
+
+######### SAVE GENERATED REQUIREMENTS TO DATABASE ############
+
+def add_input_requirements(input_id, requirements, created_at):
+    db = get_db()
+    print('save')
+    requirement_id = str(uuid.uuid4())
+    try:
+        db.execute("INSERT INTO generated_requirements(requirement_id, input_id, requirement,created_at) VALUES (?,?,?,?)", (requirement_id, input_id, requirements, created_at))
+        db.commit()
+        print('save')
+        return True
+    except Exception as e:
+        logger.error(f"Error: {e}")
+
+##### DELETE SPECIFIC REQUIREMENT FROM DATABASE #######
+def delete_requirements(input_id, requirement_id):
+    db = get_db()
+    try:
+        db.execute("DELETE FROM generated_requirements WHERE input_id = ? AND  requirement_id = ?", (input_id, requirement_id))
+        db.commit()
+        return True
+    except Exception as e:
+        logger.error(f"Error: {e}")

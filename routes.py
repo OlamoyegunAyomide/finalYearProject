@@ -276,3 +276,48 @@ def get_specific_user_input(current_user, input_id):
             return make_response(
                 jsonify({"message": "An unexpected error occurred"}), 500
             )
+
+# ########### GENERATE REQUIREMENTS FOR SPECIFIC USER INPUT ###################
+
+
+@endpoint.route("/api/users/inputs/<input_id>/requirements", methods=["POST"])
+@token_required
+def generate_requirements(current_user, input_id):
+    user_id = current_user["user_id"]
+    try:
+        input_data = get_user_input_by_id(user_id, input_id)
+        if input_data:
+            json_response = jsonify(input_data)
+            data = json_response.json["input"]
+            # function to generate requirements for an input
+            requirements = generate_input_requirements(input_id, data)
+            # Return success response
+            # return make_response(jsonify({"message": "Requirements generated successfully"}), 200)
+            return requirements
+        else:
+            return make_response(jsonify({"message": "Input not found"}), 404)
+
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return make_response(jsonify({"message": "An unexpected error occurred"}), 400)
+
+
+# ########### DELETE SPECIFIC REQUIREMENT FOR SPECIFIC USER INPUT ###################
+@endpoint.route(
+    "/api/users/inputs/<input_id>/requirements/<requirement_id>", methods=["DELETE"]
+)
+@token_required
+def delete_requirements(current_user, input_id, requirement_id):
+    try:
+        if delete_user_input(input_id, requirement_id):
+            return make_response(
+                jsonify({"message": "Requirements deleted successfully"}), 200
+            )
+        else:
+            return make_response(
+                jsonify({"message": "Failed to delete requirements"}), 400
+            )
+
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return make_response(jsonify({"message": "An unexpected error occurred"}), 400)
