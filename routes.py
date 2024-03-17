@@ -183,9 +183,13 @@ def submit_input(current_user):
         user_id = current_user.user_id
         print(user_id)
         if add_user_input(input_id, user_id, input, created_at):
-            return make_response(
-                jsonify({"message": "User input added successfully"}), 201
-            )
+            requirements = generate_input_requirements(input_id, data)
+            # Return success response
+            # return make_response(jsonify({"message": "Requirements generated successfully"}), 200)
+            return requirements
+            # return make_response(
+            #     jsonify({"message": "User input added successfully"}), 201
+            # )
         else:
             return make_response(jsonify({"message": "Failed to add user input"}), 400)
     except Exception as e:
@@ -280,26 +284,26 @@ def get_specific_user_input(current_user, input_id):
 # ########### GENERATE REQUIREMENTS FOR SPECIFIC USER INPUT ###################
 
 
-@endpoint.route("/api/users/inputs/<input_id>/requirements", methods=["POST"])
-@token_required
-def generate_requirements(current_user, input_id):
-    user_id = current_user["user_id"]
-    try:
-        input_data = get_user_input_by_id(user_id, input_id)
-        if input_data:
-            json_response = jsonify(input_data)
-            data = json_response.json["input"]
-            # function to generate requirements for an input
-            requirements = generate_input_requirements(input_id, data)
-            # Return success response
-            # return make_response(jsonify({"message": "Requirements generated successfully"}), 200)
-            return requirements
-        else:
-            return make_response(jsonify({"message": "Input not found"}), 404)
+# @endpoint.route("/api/users/inputs/<input_id>/requirements", methods=["POST"])
+# @token_required
+# def generate_requirements(current_user, input_id):
+#     user_id = current_user["user_id"]
+#     try:
+#         input_data = get_user_input_by_id(user_id, input_id)
+#         if input_data:
+#             json_response = jsonify(input_data)
+#             data = json_response.json["input"]
+#             # function to generate requirements for an input
+#             requirements = generate_input_requirements(input_id, data)
+#             # Return success response
+#             # return make_response(jsonify({"message": "Requirements generated successfully"}), 200)
+#             return requirements
+#         else:
+#             return make_response(jsonify({"message": "Input not found"}), 404)
 
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        return make_response(jsonify({"message": "An unexpected error occurred"}), 400)
+#     except Exception as e:
+#         logger.error(f"Error: {e}")
+#         return make_response(jsonify({"message": "An unexpected error occurred"}), 400)
 
 
 # ########### DELETE SPECIFIC REQUIREMENT FOR SPECIFIC USER INPUT ###################
