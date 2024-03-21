@@ -134,16 +134,12 @@ def add_user_input(input_id, user_id, input, created_at):
 
 
 def get_user_inputs(user_id):
-    print("start")
     db = get_db()
-    print(user_id)
     try:
         cursor = db.execute("SELECT * FROM user_input WHERE user_id =?", (user_id,))
         user_inputs_rows = cursor.fetchall()
-        print(user_inputs_rows)
         columns = ["input_id", "user_id", "input", "created_at"]
         user_inputs = [dict(zip(columns, row)) for row in user_inputs_rows]
-        print(user_inputs)
         return user_inputs
     except Exception as e:
         print(f"db_error : {e}")
@@ -154,7 +150,6 @@ def get_user_inputs(user_id):
 
 
 def get_user_input_by_id(user_id, input_id):
-    print("start")
     db = get_db()
     try:
         cursor = db.execute(
@@ -164,7 +159,6 @@ def get_user_input_by_id(user_id, input_id):
         input_data_row = cursor.fetchone()
         columns = ["input_id", "user_id", "input", "created_at"]
         input_data = dict(zip(columns, input_data_row))
-        print(input_data)
         return input_data
     except Exception as e:
         logger.error(f"Error: {e}")
@@ -226,22 +220,102 @@ def generate_input_requirements(input_id, data):
 
 def add_input_requirements(input_id, requirements, created_at):
     db = get_db()
-    print('save')
     requirement_id = str(uuid.uuid4())
     try:
         db.execute("INSERT INTO generated_requirements(requirement_id, input_id, requirement,created_at) VALUES (?,?,?,?)", (requirement_id, input_id, requirements, created_at))
         db.commit()
-        print('save')
         return True
     except Exception as e:
         logger.error(f"Error: {e}")
 
-##### DELETE SPECIFIC REQUIREMENT FROM DATABASE #######
-def delete_requirements(input_id, requirement_id):
+        
+
+# ########### FETCH ALL USER REQUIREMENTS ###################
+
+def get_all_requirements():
+    print('start')
     db = get_db()
     try:
-        db.execute("DELETE FROM generated_requirements WHERE input_id = ? AND  requirement_id = ?", (input_id, requirement_id))
+        cursor = db.execute("SELECT * FROM generated_requirements")
+        user_requirements_rows = cursor.fetchall()
+        print(user_requirements_rows)
+        columns = ['requirement_id', 'input_id','requirement', 'created_at']
+        user_requirements = [dict(zip(columns, row)) for row in user_requirements_rows]
+        print(user_requirements)
+        return user_requirements
+    except Exception as e:
+        print(f'db_error : {e}')
+        logger.error(f"Error: {e}")
+
+        
+
+# ########### FETCH SPECIFC USER REQUIREMENTS ###################
+
+def get_specific_user_requirements(user_id):
+    print('start')
+    db = get_db()
+    try:
+        user_inputs = get_user_inputs(user_id)
+        user_requirements_list = []
+        for input_data in user_inputs:
+            cursor = db.execute("SELECT * FROM generated_requirements WHERE input_id = ?", (input_data['input_id'],))
+            user_requirements_rows = cursor.fetchall()
+            # print(user_requirements_rows)
+            columns = ['requirement_id', 'input_id','requirement', 'created_at']
+            user_requirements = [dict(zip(columns, row)) for row in user_requirements_rows]
+            user_requirements_list.extend(user_requirements)
+        return user_requirements_list
+    except Exception as e:
+        print(f'db_error : {e}')
+        logger.error(f"Error: {e}")
+
+
+
+        
+
+# ########### FETCH SPECIFC USER INPUT REQUIREMENTS ###################
+
+def get_specific_input_requirements(requirement_id):
+    print('start')
+    db = get_db()
+    try:
+        cursor = db.execute("SELECT * FROM generated_requirements WHERE requirement_id = ?", (requirement_id,))
+        user_input_requirements_rows = cursor.fetchone()
+        print(user_input_requirements_rows['requirement']) 
+        if user_input_requirements_rows:
+            # Convert row object to dictionary
+            user_input_requirements = dict(user_input_requirements_rows)
+            print(user_input_requirements['requirement']) 
+            return user_input_requirements
+    except Exception as e:
+        print(f'db_error : {e}')
+        logger.error(f"Error: {e}")
+
+
+
+
+##### UPDATE REQUIREMENTS  IF THEY EXIST ALREADY #######
+
+
+def update_input_requirements(requirement_id, requirements):
+    db = get_db()
+    try:
+        db.execute("UPDATE generated_requirements SET requirement = ? WHERE requirement_id = ?", (requirements, requirement_id))
         db.commit()
         return True
     except Exception as e:
         logger.error(f"Error: {e}")
+
+
+##### DELETE SPECIFIC REQUIREMENT FROM DATABASE #######
+
+def delete_requirements(requirement_id):
+    db = get_db()
+    try:
+        db.execute("DELETE FROM generated_requirements WHERE requirement_id = ?", (requirement_id,))
+        db.commit()
+        return True
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        
+        

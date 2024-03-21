@@ -8,6 +8,16 @@ from dbMethods import (
     get_user_profile,
     update_profile,
     add_user_input,
+    get_user_inputs,
+    get_user_input_by_id,
+    update_user_input,
+    delete_user_input,
+    generate_input_requirements,
+    get_all_requirements,
+    get_specific_user_requirements,
+    get_specific_input_requirements,
+    update_input_requirements,
+    delete_requirements
 )
 from utils import valid_email
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -43,6 +53,17 @@ def token_required(f):
 
     return decorator
 
+
+# ##### DETECT USER ROLE ############
+def role_required(role):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(current_user, *args, **kwargs):
+            if current_user['role'] != role:
+                return make_response(jsonify({"message": "Access forbidden"}), 403)
+            return f(current_user, *args, **kwargs)
+        return decorated_function
+    return decorator
 
 @endpoint.route("/")
 def home():
@@ -108,6 +129,7 @@ def signIn():
             token = jwt.encode(
                 {
                     "user_id": user["user_id"],
+                    "user_role": user["role"],
                     "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=45),
                 },
                 current_app.config["SECRET_KEY"],
@@ -183,13 +205,9 @@ def submit_input(current_user):
         user_id = current_user.user_id
         print(user_id)
         if add_user_input(input_id, user_id, input, created_at):
-            requirements = generate_input_requirements(input_id, data)
-            # Return success response
-            # return make_response(jsonify({"message": "Requirements generated successfully"}), 200)
-            return requirements
-            # return make_response(
-            #     jsonify({"message": "User input added successfully"}), 201
-            # )
+            return make_response(
+                jsonify({"message": "User input added successfully"}), 201
+            )
         else:
             return make_response(jsonify({"message": "Failed to add user input"}), 400)
     except Exception as e:
@@ -284,44 +302,142 @@ def get_specific_user_input(current_user, input_id):
 # ########### GENERATE REQUIREMENTS FOR SPECIFIC USER INPUT ###################
 
 
-# @endpoint.route("/api/users/inputs/<input_id>/requirements", methods=["POST"])
-# @token_required
-# def generate_requirements(current_user, input_id):
-#     user_id = current_user["user_id"]
-#     try:
-#         input_data = get_user_input_by_id(user_id, input_id)
-#         if input_data:
-#             json_response = jsonify(input_data)
-#             data = json_response.json["input"]
-#             # function to generate requirements for an input
-#             requirements = generate_input_requirements(input_id, data)
-#             # Return success response
-#             # return make_response(jsonify({"message": "Requirements generated successfully"}), 200)
-#             return requirements
-#         else:
-#             return make_response(jsonify({"message": "Input not found"}), 404)
-
-#     except Exception as e:
-#         logger.error(f"Error: {e}")
-#         return make_response(jsonify({"message": "An unexpected error occurred"}), 400)
-
-
-# ########### DELETE SPECIFIC REQUIREMENT FOR SPECIFIC USER INPUT ###################
-@endpoint.route(
-    "/api/users/inputs/<input_id>/requirements/<requirement_id>", methods=["DELETE"]
-)
+@endpoint.route("/api/users/inputs/<input_id>/requirements", methods=["POST"])
 @token_required
-def delete_requirements(current_user, input_id, requirement_id):
+def generate_requirements(current_user, input_id):
+    user_id = current_user["user_id"]
     try:
-        if delete_user_input(input_id, requirement_id):
-            return make_response(
-                jsonify({"message": "Requirements deleted successfully"}), 200
-            )
+        input_data = get_user_input_by_id(user_id, input_id)
+        if input_data:
+            json_response = jsonify(input_data)
+            data = json_response.json["input"]
+            # function to generate requirements for an input
+            requirements = generate_input_requirements(input_id, data)
+            # Return success response
+            # return make_response(jsonify({"message": "Requirements generated successfully"}), 200)
+            return requirements
         else:
-            return make_response(
-                jsonify({"message": "Failed to delete requirements"}), 400
-            )
+            return make_response(jsonify({"message": "Input not found"}), 404)
 
     except Exception as e:
         logger.error(f"Error: {e}")
         return make_response(jsonify({"message": "An unexpected error occurred"}), 400)
+
+
+
+# ########### FETCH ALL REQUIREMENTS ###################
+
+@endpoint.route("/api/admin/requirements", methods=["GET"])
+@token_required
+@role_required("engineer") 
+def get_all_users_requirements(current_user):
+    print(current_user)
+    try:
+        user_id = current_user["user_id"]
+        user_role = current_user["role"]
+        print(user_id)
+        print(user_role)
+        requirements = get_all_requirements()
+        if requirements:
+            return jsonify(requirements)
+        else:
+            return make_response(jsonify({"message": "There are no avaiable requirements"}), 404)
+    except KeyError:
+        return make_response(
+            jsonify({"message": "User ID not found in current user data"}), 400
+        )
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return make_response(
+            jsonify({"message": f"An unexpected error occurred: {e}"}), 400
+        )
+
+
+
+# ########### FETCH SPECIFIC USER REQUIREMENTS ###################
+
+@endpoint.route("/api/admin/requirements/user/<user_id>", methods=["GET"])
+@token_required
+@role_required("engineer") 
+def get_specified_users_requirements(current_user, user_id):
+    print(current_user['user_id'])
+    try:
+        # user_id = current_user["user_id"]
+        user_role = current_user["role"]
+        # print(user_id)
+        # print(user_role)
+        user_requirements = get_specific_user_requirements(user_id)
+        if user_requirements:
+            return jsonify(user_requirements)
+        else:
+            return make_response(jsonify({"message": "User has no requirements"}), 404)
+    except KeyError:
+        return make_response(
+            jsonify({"message": "User ID not found in current user data"}), 400
+        )
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return make_response(
+            jsonify({"message": f"An unexpected error occurred: {e}"}), 400
+        )
+
+
+
+# ########### FETCH, UPDATE OR DELETE SPECIFIC REQUIREMENT  ###################
+@endpoint.route(
+    "/api/admin/requirements/<requirement_id>", methods=["GET", "PUT", "DELETE"]
+)
+@token_required
+@role_required("engineer") 
+def handle_requirements(current_user, requirement_id):
+    user_id = current_user["user_id"]
+    if request.method == "GET":  # to view user input
+        try:
+            print(user_id)
+            # print(input_id)
+            input_requirements_data = get_specific_input_requirements(requirement_id)
+            if input_requirements_data:
+                return jsonify(input_requirements_data)
+            else:
+                return make_response(jsonify({"message": "Input has no requirements"}), 404)
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            return make_response(
+                jsonify({"message": "An unexpected error occurred"}), 400
+            )
+    
+    
+    elif request.method == "PUT":  # to modify input requirements
+        try:
+            data = request.get_json()
+            requirements = data.get("requirement")
+            if not requirements:
+                return make_response(jsonify({"message": "Requirements missing"}), 400)
+            if update_input_requirements(requirement_id, requirements):
+                return make_response(
+                    jsonify({"message": "Requirements updated successfully"}), 200
+                )
+            else:
+                return make_response(
+                    jsonify({"message": "Failed to update requirement"}), 400
+                )
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            return make_response(
+                jsonify({"message": "An unexpected error occurred"}), 400
+            )
+    
+    elif request.method == "DELETE":  # to delete user input
+        try:
+            if delete_requirements(requirement_id):
+                return make_response(
+                    jsonify({"message": "Requirements deleted successfully"}), 200
+                )
+            else:
+                return make_response(
+                    jsonify({"message": "Failed to delete requirements"}), 400
+                )
+
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            return make_response(jsonify({"message": "An unexpected error occurred"}), 400)
