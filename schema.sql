@@ -23,3 +23,7 @@ CREATE TABLE IF NOT EXISTS generated_requirements(
     created_at TIMESTAMP,
     FOREIGN KEY(input_id) REFERENCES user_input(input_id)
 );
+
+
+ALTER TABLE users
+ADD COLUMN role TEXT;
