@@ -45,7 +45,8 @@ def init_app(app):
     app.teardown_appcontext(close_db)
     init_db(app)
 
+app = create_app()
+init_app(app)
+
 if __name__ == "__main__":
-    app = create_app()
-    init_app(app)
-    app.run(debug = True)
+    app.run(debug=True)
