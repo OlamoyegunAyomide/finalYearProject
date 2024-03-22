@@ -4,12 +4,14 @@ class users:
         self.user_id= user_id if user_id else uuid.uuid4().hex
         self.full_name = full_name
         self. email_address = email_address
+        self.role = role
         self.password = password
 
     def __str__(self):
         return f"user_id: {self.user_id};"\
                 f"full_name: {self.full_name}; "\
                 f"email_address: {self.email_address}; "\
+                f"role: {self.role}; "\
                 f"password: {self.password}"
     
 class user_input:

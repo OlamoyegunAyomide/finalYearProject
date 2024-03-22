@@ -70,8 +70,10 @@ def home():
     return "Welcome"
 
 
+# ##### FETCH ALL USERS #########
 @endpoint.route("/api/users", methods=["GET"])
 @token_required
+@role_required("engineer") 
 def get_all_users(current_user):
     try:
         users = get_users()
@@ -80,12 +82,12 @@ def get_all_users(current_user):
         logger.error(f"Error: {e}")
         return make_response(jsonify({"message": "An unexpected error occurred"}), 500)
 
-
+# ######## SIGN UP #############
 @endpoint.route("/api/users/signup", methods=["POST"])
 def signup():
     try:
         data = request.get_json()
-        required_fields = ["full_name", "email_address", "password"]
+        required_fields = ["full_name", "email_address", "role", "password"]
         # to check for missing fields
         missing_fields = [field for field in required_fields if not data.get(field)]
         if missing_fields:
@@ -103,7 +105,7 @@ def signup():
         user_id = str(uuid.uuid4())
 
         if create_user(
-            user_id, data["full_name"], data["email_address"], hashed_password
+            user_id, data["full_name"], data["email_address"], data["role"], hashed_password
         ):
             return make_response(
                 jsonify({"message": "User successfully registered"}), 201
@@ -114,7 +116,7 @@ def signup():
         logger.error(f"Error: {e}")
         return make_response(jsonify({"message": "An unexpected error occurred"}), 400)
 
-
+# ###########S SIGN IN ##########
 @endpoint.route("/api/users/signin", methods=["POST"])
 def signIn():
     try:
@@ -141,7 +143,7 @@ def signIn():
         logger.error(f"Error: {e}")
         return make_response(jsonify({"message": "An unexpected error occurred"}), 400)
 
-
+# #####vu
 @endpoint.route("/api/users/<user_id>", methods=["GET", "PUT"])
 @token_required
 def view_profile(current_user, user_id):
@@ -153,7 +155,8 @@ def view_profile(current_user, user_id):
             user_data = {
                 "full_name": user[0],
                 "email_address": user[1],
-                "password": user[2],
+                "role": user[2],
+                "password": user[3],
             }
             return jsonify(user_data), 200
         except Exception as e:
@@ -166,6 +169,7 @@ def view_profile(current_user, user_id):
             data = request.get_json()
             full_name = data.get("full_name")
             email_address = data.get("email_address")
+            role = data.get("role")
             new_password = data.get("new_password")
 
             if email_address and not valid_email(email_address):
@@ -175,7 +179,7 @@ def view_profile(current_user, user_id):
                 generate_password_hash(new_password) if new_password else None
             )
 
-            if update_profile(user_id, full_name, email_address, hashed_password):
+            if update_profile(user_id, full_name, email_address, role, hashed_password):
                 return make_response(
                     jsonify({"message": "User profile updated successfully"}), 200
                 )

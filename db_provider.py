@@ -1,5 +1,6 @@
 from flask import Flask, request, make_response, current_app, g
 import sqlite3
+from log_config import logger
 
 def get_db():
     if 'db' not in g:

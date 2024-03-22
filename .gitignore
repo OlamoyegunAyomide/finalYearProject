@@ -2,6 +2,7 @@ __pycache__/
 
 #virtual environment
 Elicitation/
+venv/
 
 #instance folder
 instance/
