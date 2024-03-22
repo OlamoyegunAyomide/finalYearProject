@@ -27,3 +27,7 @@ CREATE TABLE IF NOT EXISTS generated_requirements(
 
 ALTER TABLE users
 ADD COLUMN role TEXT;
+
+
+ALTER TABLE generated_requirements
+ADD COLUMN status TEXT;

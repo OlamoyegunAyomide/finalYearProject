@@ -5,10 +5,12 @@ from db_provider import get_db, close_db, init_db
 from routes import endpoint
 import sqlite3
 import os
+from flask_cors import CORS
 
 #application setup phase
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
+    CORS(app, resources= {r"/*":{"origins":"*"}})
 
     app.config.from_mapping(
         SECRET_KEY='dev',

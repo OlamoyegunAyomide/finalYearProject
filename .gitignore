@@ -2,9 +2,14 @@ __pycache__/
 
 #virtual environment
 Elicitation/
+venv/
 
 #instance folder
 instance/
 
 #log file
 app.log
+
+endpoints.txt
+
+.env
