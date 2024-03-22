@@ -25,6 +25,7 @@ import uuid, jwt
 import datetime
 from functools import wraps
 from log_config import logger
+from decouple import config
 
 endpoint = Blueprint("endpoint", __name__)
 
@@ -35,7 +36,7 @@ def token_required(f):
         token = None
         if "x-access-tokens" in request.headers:
             token = request.headers["x-access-tokens"]
-            print(token)
+            # print(token)
         if not token:
             return jsonify({"message": "a valid token is missing"}), 401
         try:
@@ -43,7 +44,7 @@ def token_required(f):
                 token, current_app.config["SECRET_KEY"], algorithms=["HS256"]
             )
             current_user = get_user_by_id(data["user_id"])
-            print(current_user)
+            # print(current_user)
         except Exception as e:
             return jsonify({"message": "token is invalid"}), 401
             logger.error(f"Error: {e}")
@@ -70,8 +71,10 @@ def home():
     return "Welcome"
 
 
+# ##### FETCH ALL USERS #########
 @endpoint.route("/api/users", methods=["GET"])
 @token_required
+@role_required("engineer") 
 def get_all_users(current_user):
     try:
         users = get_users()
@@ -80,12 +83,12 @@ def get_all_users(current_user):
         logger.error(f"Error: {e}")
         return make_response(jsonify({"message": "An unexpected error occurred"}), 500)
 
-
+# ######## SIGN UP #############
 @endpoint.route("/api/users/signup", methods=["POST"])
 def signup():
     try:
         data = request.get_json()
-        required_fields = ["full_name", "email_address", "password"]
+        required_fields = ["full_name", "email_address", "role", "password"]
         # to check for missing fields
         missing_fields = [field for field in required_fields if not data.get(field)]
         if missing_fields:
@@ -103,7 +106,7 @@ def signup():
         user_id = str(uuid.uuid4())
 
         if create_user(
-            user_id, data["full_name"], data["email_address"], hashed_password
+            user_id, data["full_name"], data["email_address"], data["role"], hashed_password
         ):
             return make_response(
                 jsonify({"message": "User successfully registered"}), 201
@@ -114,7 +117,7 @@ def signup():
         logger.error(f"Error: {e}")
         return make_response(jsonify({"message": "An unexpected error occurred"}), 400)
 
-
+# ###########S SIGN IN ##########
 @endpoint.route("/api/users/signin", methods=["POST"])
 def signIn():
     try:
@@ -141,7 +144,7 @@ def signIn():
         logger.error(f"Error: {e}")
         return make_response(jsonify({"message": "An unexpected error occurred"}), 400)
 
-
+# ##### VIEW PROFILE ##########
 @endpoint.route("/api/users/<user_id>", methods=["GET", "PUT"])
 @token_required
 def view_profile(current_user, user_id):
@@ -153,7 +156,8 @@ def view_profile(current_user, user_id):
             user_data = {
                 "full_name": user[0],
                 "email_address": user[1],
-                "password": user[2],
+                "role": user[2],
+                "password": user[3],
             }
             return jsonify(user_data), 200
         except Exception as e:
@@ -166,6 +170,7 @@ def view_profile(current_user, user_id):
             data = request.get_json()
             full_name = data.get("full_name")
             email_address = data.get("email_address")
+            role = data.get("role")
             new_password = data.get("new_password")
 
             if email_address and not valid_email(email_address):
@@ -175,7 +180,7 @@ def view_profile(current_user, user_id):
                 generate_password_hash(new_password) if new_password else None
             )
 
-            if update_profile(user_id, full_name, email_address, hashed_password):
+            if update_profile(user_id, full_name, email_address, role, hashed_password):
                 return make_response(
                     jsonify({"message": "User profile updated successfully"}), 200
                 )
@@ -190,6 +195,7 @@ def view_profile(current_user, user_id):
             )
 
 
+# ###### SUBMIT INPUT ##############
 @endpoint.route("/api/input", methods=["POST"])
 @token_required
 def submit_input(current_user):
@@ -202,7 +208,7 @@ def submit_input(current_user):
         input = data["input"]
         if current_user is None:
             return make_response(jsonify({"message": "Invalid user information"}), 400)
-        user_id = current_user.user_id
+        user_id = current_user["user_id"]
         print(user_id)
         if add_user_input(input_id, user_id, input, created_at):
             return make_response(
@@ -298,6 +304,7 @@ def get_specific_user_input(current_user, input_id):
             return make_response(
                 jsonify({"message": "An unexpected error occurred"}), 500
             )
+
 
 # ########### GENERATE REQUIREMENTS FOR SPECIFIC USER INPUT ###################
 
@@ -441,3 +448,11 @@ def handle_requirements(current_user, requirement_id):
         except Exception as e:
             logger.error(f"Error: {e}")
             return make_response(jsonify({"message": "An unexpected error occurred"}), 400)
+        
+
+# ############ APPROVE REQUIREMENTS ############
+@endpoint.route(
+    "/api/admin/requirements/<requirement_id>", methods=["GET", "PUT", "DELETE"]
+)
+@token_required
+@role_required("engineer")

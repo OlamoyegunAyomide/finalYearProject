@@ -2,6 +2,10 @@ from log_config import logger
 from db_provider import get_db
 from models import users, user_input, generated_requirements
 import sqlite3
+from decouple import config
+import google.generativeai as genai
+import datetime
+import uuid
 
 
 def get_user_by_email(email_address):
@@ -43,12 +47,12 @@ def get_users():
     return users
 
 
-def create_user(user_id, full_name, email_address, password):
+def create_user(user_id, full_name, email_address, role, password):
     db = get_db()
     try:
         cursor = db.execute(
-            "INSERT INTO users (user_id, full_name, email_address, password) VALUES (?,?,?,?)",
-            (user_id, full_name, email_address, password),
+            "INSERT INTO users (user_id, full_name, email_address, role, password) VALUES (?,?,?,?,?)",
+            (user_id, full_name, email_address, role, password),
         )
         db.commit()
         return True
@@ -60,15 +64,9 @@ def get_user_by_id(user_id):
     db = get_db()
     try:
         cursor = db.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
-        user_data = cursor.fetchone()
-        if user_data is None:
+        user = cursor.fetchone()
+        if not user:
             return None
-        user = users(
-            user_data["user_id"],
-            user_data["full_name"],
-            user_data["email_address"],
-            user_data["password"],
-        )
         return user
     except Exception as e:
         logger.error(f"Error: {e}")
@@ -78,7 +76,7 @@ def get_user_profile(user_id):
     db = get_db()
     try:
         cursor = db.execute(
-            "SELECT full_name, email_address, password FROM users WHERE user_id = ?",
+            "SELECT full_name, email_address, role, password FROM users WHERE user_id = ?",
             (user_id,),
         )
         user_details = cursor.fetchone()
@@ -99,6 +97,9 @@ def update_profile(user_id, full_name=None, email_address=None, new_password=Non
         if email_address:
             sql += "email_address = ?, "
             params.append(email_address)
+        if role:
+            sql += "role = ?, "
+            params.append(role)
         if new_password:
             sql += "password = ?, "
             params.append(new_password)
@@ -211,18 +212,19 @@ def generate_input_requirements(input_id, data):
     requirements = response.text
 
     created_at = datetime.datetime.utcnow()
-    add_input_requirements(input_id, requirements, created_at)
+    status = "pending"
+    add_input_requirements(input_id, requirements, created_at, status)
     
     return requirements
 
 
 ######### SAVE GENERATED REQUIREMENTS TO DATABASE ############
 
-def add_input_requirements(input_id, requirements, created_at):
+def add_input_requirements(input_id, requirements, created_at, status):
     db = get_db()
     requirement_id = str(uuid.uuid4())
     try:
-        db.execute("INSERT INTO generated_requirements(requirement_id, input_id, requirement,created_at) VALUES (?,?,?,?)", (requirement_id, input_id, requirements, created_at))
+        db.execute("INSERT INTO generated_requirements(requirement_id, input_id, requirement, created_at, status) VALUES (?,?,?,?,?)", (requirement_id, input_id, requirements, created_at, status))
         db.commit()
         return True
     except Exception as e:
