@@ -18,7 +18,8 @@ from dbMethods import (
     get_specific_input_requirements,
     update_input_requirements,
     delete_requirements,
-    update_requirements_status
+    update_requirements_status,
+    get_approved_user_requirements
 )
 from utils import valid_email
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -475,4 +476,32 @@ def update_requirements(current_user, requirement_id):
         logger.error(f"Error: {e}")
         return make_response(
             jsonify({"message": "An unexpected error occurred"}), 400
+        )
+        
+        
+        
+# ########### FETCH APPROVED USER REQUIREMENTS ###################
+
+@endpoint.route("/api/user/requirements", methods=["GET"])
+@token_required 
+def get_approved_requirements(current_user):
+    print(current_user['user_id'])
+    try:
+        user_id = current_user["user_id"]
+        user_role = current_user["role"]
+        # print(user_id)
+        # print(user_role)
+        approved_user_requirements = get_approved_user_requirements(user_id)
+        if approved_user_requirements:
+            return jsonify(approved_user_requirements)
+        else:
+            return make_response(jsonify({"message": "You have no approved requirements"}), 404)
+    except KeyError:
+        return make_response(
+            jsonify({"message": "User ID not found in current user data"}), 400
+        )
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return make_response(
+            jsonify({"message": f"An unexpected error occurred: {e}"}), 400
         )

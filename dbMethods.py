@@ -324,6 +324,26 @@ def delete_requirements(requirement_id):
 ###### FETCH APPROVED REQUIREMENTS #########
 
 
+def get_approved_user_requirements(user_id):
+    print('start')
+    db = get_db()
+    try:
+        user_inputs = get_user_inputs(user_id)
+        approved_requirements_list = []
+        status = "approved"
+        for input_data in user_inputs:
+            cursor = db.execute("SELECT * FROM generated_requirements WHERE input_id = ? AND status = ?", (input_data['input_id'],status))
+            approved_requirements_rows = cursor.fetchall()
+            # print(user_requirements_rows)
+            columns = ['requirement_id', 'input_id','requirement', 'created_at', 'status']
+            approved_requirements = [dict(zip(columns, row)) for row in approved_requirements_rows]
+            approved_requirements_list.extend(approved_requirements)
+        return approved_requirements_list
+    except Exception as e:
+        print(f'db_error : {e}')
+        logger.error(f"Error: {e}")
+
+
 ###### CHANGE REQUIREMENTS STATUS ###########
         
 
