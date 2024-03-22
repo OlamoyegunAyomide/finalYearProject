@@ -5,7 +5,6 @@ Elicitation/
 venv/
 
 #instance folder
-instance/
 
 #log file
 app.log

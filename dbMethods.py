@@ -320,4 +320,18 @@ def delete_requirements(requirement_id):
     except Exception as e:
         logger.error(f"Error: {e}")
         
+
+###### FETCH APPROVED REQUIREMENTS #########
+
+
+###### CHANGE REQUIREMENTS STATUS ###########
         
+
+def update_requirements_status(requirement_id, status):
+    db = get_db()
+    try:
+        db.execute("UPDATE generated_requirements SET status = ? WHERE requirement_id = ?", (status, requirement_id))
+        db.commit()
+        return True
+    except Exception as e:
+        logger.error(f"Error: {e}")

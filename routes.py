@@ -17,7 +17,8 @@ from dbMethods import (
     get_specific_user_requirements,
     get_specific_input_requirements,
     update_input_requirements,
-    delete_requirements
+    delete_requirements,
+    update_requirements_status
 )
 from utils import valid_email
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -452,7 +453,26 @@ def handle_requirements(current_user, requirement_id):
 
 # ############ APPROVE REQUIREMENTS ############
 @endpoint.route(
-    "/api/admin/requirements/<requirement_id>", methods=["GET", "PUT", "DELETE"]
+    "/api/admin/requirements/<requirement_id>/status", methods=["PUT"]
 )
 @token_required
 @role_required("engineer")
+def update_requirements(current_user, requirement_id):
+    try:
+        data = request.get_json()
+        status = data.get("status")
+        if not status:
+            return make_response(jsonify({"message": "Status missing"}), 400)
+        if update_requirements_status(requirement_id, status):
+            return make_response(
+                jsonify({"message": "Requirement Status updated successfully"}), 200
+            )
+        else:
+            return make_response(
+                jsonify({"message": "Failed to update requirement"}), 400
+            )
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return make_response(
+            jsonify({"message": "An unexpected error occurred"}), 400
+        )
