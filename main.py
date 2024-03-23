@@ -10,7 +10,7 @@ from flask_cors import CORS
 #application setup phase
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
-    CORS(app, resources= {r"/api/*":{"origins":"http://localhost:3000"}})
+    CORS(app, resources= {r"/api/*":{"origins":["http://localhost:3000", "https://localhost:3000"]}})
 
     app.config.from_mapping(
         SECRET_KEY='dev',
